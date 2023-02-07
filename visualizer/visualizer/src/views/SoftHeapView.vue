@@ -107,6 +107,7 @@ export default {
           selector: "[id ^= 'p']",
           style: {
             "background-opacity": "0",
+            // "border-opacity": "0"
           },
         },
         {

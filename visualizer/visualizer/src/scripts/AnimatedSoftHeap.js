@@ -190,12 +190,18 @@ class AnimatedSoftHeap {
       edges: {
         left: `e${this.numEdges++}`,
         right: `e${this.numEdges++}`,
-        next: undefined,
+        next: null,
       },
       parent: `p${this.numParents++}`
     };
 
     // this.cf.startSync();
+    if (x.next && x.next.key !== Infinity) {
+      this.cf.removeEdge(x.cy.edges.next);
+    }
+    if (y.next && y.next.key !== Infinity) {
+      this.cf.removeEdge(y.cy.edges.next);
+    }
     this.cf.shiftNode(x, 0, 50);
     this.cf.shiftNode(y, 0, 50);
     this.cf.addNodeById(z.cy.parent);
