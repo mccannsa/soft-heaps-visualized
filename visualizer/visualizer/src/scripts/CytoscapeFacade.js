@@ -136,8 +136,11 @@ class CytoscapeFacade {
         `moving node ${node.cy.id} to parent ${parentId}`
       );
       if (node.cy) {
-        node.cy.parent = parentId;
-        this.getNode(node).move({ parent: parentId });
+        let cyNode = this.getNode(node);
+        if (cyNode.parent().length > 0) {
+          cyNode = cyNode.parent();
+        }
+        cyNode.move({ parent: parentId });
       }
       this.isReady = true;
     });
