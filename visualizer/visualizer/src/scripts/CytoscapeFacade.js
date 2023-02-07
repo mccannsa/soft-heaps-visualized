@@ -239,7 +239,7 @@ class CytoscapeFacade {
           y: cyNode.position("y") + y,
         },
       };
-      this.highlightNode(node, options);
+      this.highlightNodeById(cyNode.data("id"), options);
     });
   }
 
@@ -272,8 +272,7 @@ class CytoscapeFacade {
       let n2HasParent = cyN2.parent().length > 0;
 
       if (n1HasParent && n2HasParent && cyN1.parent() === cyN2.parent()) {
-        console.log(`${n1.cy.id} parent: ${cyN1.parent()}; ${n2.cy.id} parent: ${cyN2.parent()[0]}`);
-
+        console.log(`${n1.cy.id} parent: ${cyN1.parent()}; ${n2.cy.id} parent: ${cyN2.parent()}`);
       } else {
         if (n1HasParent) {
           cyN1 = cyN1.parent();
