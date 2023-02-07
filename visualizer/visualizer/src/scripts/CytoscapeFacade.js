@@ -98,6 +98,28 @@ class CytoscapeFacade {
     cyNode.animate(options);
   }
 
+  highlightNodeById(id, props = {}) {
+    let cyNode = this.cy.$(`node#${id}`);
+    let options = {
+      style: {
+        "background-color": "orchid",
+      },
+      complete: () => {
+        cyNode.animate({
+          style: {
+            "background-color": "lavender",
+          },
+          complete: () => {
+            this.isReady = true;
+            console.log("queue ready");
+          },
+        });
+      },
+    };
+    options = Object.assign(options, props);
+    cyNode.animate(options);
+  }
+
   moveEdge(id, source, target) {
     this.queueAnimation(() => {
       console.log(
@@ -204,7 +226,8 @@ class CytoscapeFacade {
   shiftNode(node, x, y) {
     this.queueAnimation(() => {
       let cyNode = this.getNode(node);
-      if (cyNode.parent()) {
+      if (cyNode.parent().length > 0) {
+        console.log(`parent of ${node.cy.id}: ${cyNode.parent()}`);
         cyNode = cyNode.parent();
       }
       let options = {
@@ -240,21 +263,22 @@ class CytoscapeFacade {
     this.queueAnimation(() => {
       console.log(`swapping nodes ${n1.cy.id} and ${n2.cy.id}`);
       let cyN1 = this.getNode(n1);
-      if (cyN1.parent()) {
+      if (cyN1.parent().length > 0) {
         cyN1 = cyN1.parent();
       }
       let cyN2 = this.getNode(n2);
-      if (cyN2.parent()) {
+      if (cyN2.parent().length > 0) {
         cyN2 = cyN2.parent();
       }
+      console.log(cyN2.data("id"));
       let n2Options = {
         position: { x: cyN1.position("x"), y: cyN1.position("y") },
       };
       let n1Options = {
         position: { x: cyN2.position("x"), y: cyN2.position("y") },
       };
-      this.highlightNode(n1, n1Options);
-      this.highlightNode(n2, n2Options);
+      this.highlightNodeById(cyN1.data("id"), n1Options);
+      this.highlightNodeById(cyN2.data("id"), n2Options);
     });
   }
 

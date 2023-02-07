@@ -200,8 +200,6 @@ class AnimatedSoftHeap {
     this.cf.shiftNode(y, 0, 50);
     this.cf.addNodeById(z.cy.parent);
     this.cf.addNode(z, { parent: z.cy.parent });
-    x.cy.parent = z.cy.parent;
-    y.cy.parent = z.cy.parent;
     this.cf.moveNode(x, z.cy.parent);
     this.cf.moveNode(y, z.cy.parent);
     this.cf.addEdge(z.cy.edges.left, z, x);
