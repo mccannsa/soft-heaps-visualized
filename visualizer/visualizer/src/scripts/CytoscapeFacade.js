@@ -266,14 +266,23 @@ class CytoscapeFacade {
     this.queueAnimation(() => {
       console.log(`swapping nodes ${n1.cy.id} and ${n2.cy.id}`);
       let cyN1 = this.getNode(n1);
-      if (cyN1.parent().length > 0) {
-        cyN1 = cyN1.parent();
-      }
       let cyN2 = this.getNode(n2);
-      if (cyN2.parent().length > 0) {
-        cyN2 = cyN2.parent();
+
+      let n1HasParent = cyN1.parent().length > 0;
+      let n2HasParent = cyN2.parent().length > 0;
+
+      if (n1HasParent && n2HasParent && cyN1.parent() === cyN2.parent()) {
+        console.log(`${n1.cy.id} parent: ${cyN1.parent()}; ${n2.cy.id} parent: ${cyN2.parent()[0]}`);
+
+      } else {
+        if (n1HasParent) {
+          cyN1 = cyN1.parent();
+        }
+        if (n2HasParent) {
+          cyN2 = cyN2.parent();
+        }
       }
-      console.log(cyN2.data("id"));
+
       let n2Options = {
         position: { x: cyN1.position("x"), y: cyN1.position("y") },
       };
