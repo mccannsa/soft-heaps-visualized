@@ -46,6 +46,16 @@ class CytoscapeFacade {
     });
   }
 
+  addNodeById(id) {
+    this.queueAnimation(() => {
+      this.cy.add({
+        group: "nodes",
+        data: {id: id}
+      });
+      this.isReady = true;
+    })
+  }
+
   endSync() {
     this.queueAnimation(() => {
       console.log("ending sync");
@@ -58,6 +68,10 @@ class CytoscapeFacade {
 
   getNode(node) {
     return this.cy.$(`node#${node.cy.id}`);
+  }
+
+  getNodeById(id) {
+    this.cy.$(`node#${id}`);
   }
 
   getNodesWith(properties) {}
@@ -90,6 +104,19 @@ class CytoscapeFacade {
         `moving edge ${id}: new source node ${source.cy.id}, new target node ${target.cy.id}`
       );
       this.cy.$(`edge#${id}`).move(source.cy.id, target.cy.id);
+      this.isReady = true;
+    });
+  }
+
+  moveNode(node, parentId) {
+    this.queueAnimation(() => {
+      console.log(
+        `moving node ${node.cy.id} to parent ${parentId}`
+      );
+      if (node.cy) {
+        node.cy.parent = parentId;
+        this.getNode(node).move({ parent: parentId });
+      }
       this.isReady = true;
     });
   }
@@ -177,66 +204,26 @@ class CytoscapeFacade {
   shiftNode(node, x, y) {
     this.queueAnimation(() => {
       let cyNode = this.getNode(node);
-      // let oldPos = {
-      //   x: cyNode.position("x"),
-      //   y: cyNode.position("y"),
-      // }
-      // let children = cyNode.connectedNodes().filter(`edge#${node.cy.edges.next}`);
+      if (cyNode.parent()) {
+        cyNode = cyNode.parent();
+      }
       let options = {
         position: {
           x: cyNode.position("x") + x,
           y: cyNode.position("y") + y,
         },
-        // complete: () => {
-        //   if (children.length > 0) {
-        //     let dx = cyNode.position("x") - oldPos.x;
-        //     let dy = cyNode.position("y") - oldPos.y;
-        //     children.animate({
-        //       position: {
-        //         x: children.positions("x") + dx,
-        //         y: children.positions("y") + dy
-        //       },
-        //       complete: () => {
-        //         this.isReady = true;
-        //       }
-        //     })
-        //   } else {
-        //     this.isReady = true;
-        //   }
-        // }
       };
       this.highlightNode(node, options);
-      // cyNode.animate(options)
     });
   }
 
   shiftNodeTo(node, x, y) {
     this.queueAnimation(() => {
       console.log(`shifting node ${node.cy.id}`);
-      // let cyNode = this.getNode(node);
-      // let dx = x - cyNode.position("x");
-      // let dy = y - cyNode.position("y");
-      // let children = cyNode.connectedNodes().filter(`edge#${node.cy.edges.next}`);
       let options = {
         position: { x: x, y: y },
-        // complete: () => {
-        //   if (children.length > 0) {
-        //     children.animate({
-        //       position: {
-        //         x: children.positions("x") + dx,
-        //         y: children.positions("y") + dy
-        //       },
-        //       complete: () => {
-        //         this.isReady = true;
-        //       }
-        //     })
-        //   } else {
-        //     this.isReady = true;
-        //   }
-        // }
       };
       this.highlightNode(node, options);
-      // cyNode.animate(options)
     });
   }
 
@@ -253,63 +240,19 @@ class CytoscapeFacade {
     this.queueAnimation(() => {
       console.log(`swapping nodes ${n1.cy.id} and ${n2.cy.id}`);
       let cyN1 = this.getNode(n1);
+      if (cyN1.parent()) {
+        cyN1 = cyN1.parent();
+      }
       let cyN2 = this.getNode(n2);
-
-      // let n1Children = cyN1.connectedNodes().filter(`edge#${n1.cy.edges.next}`)
-      // let n2Children = cyN2.connectedNodes().filter(`edge#${n2.cy.edges.next}`)
-
-      // let oldN1 = {
-      //   x: cyN1.position("x"),
-      //   y: cyN1.position("y")
-      // }
-
-      // let oldN2 = {
-      //   x: cyN2.position("x"),
-      //   y: cyN2.position("y")
-      // }
-
+      if (cyN2.parent()) {
+        cyN2 = cyN2.parent();
+      }
       let n2Options = {
         position: { x: cyN1.position("x"), y: cyN1.position("y") },
-        // complete: () => {
-        //   if (n2Children.length > 0) {
-        //     let dx = cyN2.position("x") - oldN2.x;
-        //     let dy = cyN2.position("y") - oldN2.y;
-        //     n1Children.animate({
-        //       position: {
-        //         x: n2Children.positions("x") + dx,
-        //         y: n2Children.positions("y") + dy
-        //       },
-        //       complete: () => {
-        //         this.isReady = true;
-        //       }
-        //     })
-        //   } else {
-        //     this.isReady = true;
-        //   }
-        // }
       };
-
       let n1Options = {
         position: { x: cyN2.position("x"), y: cyN2.position("y") },
-        // complete: () => {
-        //   if (n1Children.length > 0) {
-        //     let dx = cyN1.position("x") - oldN1.x;
-        //     let dy = cyN1.position("y") - oldN1.y;
-        //     n1Children.animate({
-        //       position: {
-        //         x: n1Children.positions("x") + dx,
-        //         y: n1Children.positions("y") + dy
-        //       },
-        //       complete: () => {
-        //         cyN2.animate(n2Options)
-        //       }
-        //     })
-        //   } else {
-        //     cyN2.animate(n2Options)
-        //   }
-        // }
       };
-      // cyN1.animate(n1Options)
       this.highlightNode(n1, n1Options);
       this.highlightNode(n2, n2Options);
     });

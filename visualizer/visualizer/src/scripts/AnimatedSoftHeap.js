@@ -27,6 +27,7 @@ class AnimatedSoftHeap {
     this.cf = new CytoscapeFacade(containerId, cyProps);
     this.numNodes = 0;
     this.numEdges = 0;
+    this.numParents = 0;
     this.ptr = nil;
   }
 
@@ -162,6 +163,17 @@ class AnimatedSoftHeap {
     return x;
   }
 
+  // getSubtree(node) {
+  //   let x = []
+  //   if (node.cy) {
+  //     x.push(node);
+  //     x.concat(this.getSubtree(node.left));
+  //     x.concat(this.getSubtree(node.right));
+  //     return x;
+  //   }
+  //   return undefined;
+  // }
+
   link(x, y) {
     let z = new Node();
     z.set = null;
@@ -178,14 +190,20 @@ class AnimatedSoftHeap {
       edges: {
         left: `e${this.numEdges++}`,
         right: `e${this.numEdges++}`,
-        next: null,
+        next: undefined,
       },
+      parent: `p${this.numParents++}`
     };
 
     // this.cf.startSync();
     this.cf.shiftNode(x, 0, 50);
     this.cf.shiftNode(y, 0, 50);
-    this.cf.addNode(z, z.cy.position.x, z.cy.position.y);
+    this.cf.addNodeById(z.cy.parent);
+    this.cf.addNode(z, { parent: z.cy.parent });
+    x.cy.parent = z.cy.parent;
+    y.cy.parent = z.cy.parent;
+    this.cf.moveNode(x, z.cy.parent);
+    this.cf.moveNode(y, z.cy.parent);
     this.cf.addEdge(z.cy.edges.left, z, x);
     this.cf.addEdge(z.cy.edges.right, z, y);
     // this.cf.endSync();
