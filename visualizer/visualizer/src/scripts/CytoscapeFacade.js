@@ -17,7 +17,7 @@ class CytoscapeFacade {
     this.duration = 400; // animation duration in milliseconds
     this.intervalId = setInterval(() => {
       this.run();
-    }, 100);
+    }, 1);
     this.numParents = 0;
     this.animate = true;
   }
@@ -230,9 +230,11 @@ class CytoscapeFacade {
 
   replaceNode(n1, n2) {
     this.queueAnimation(() => {
-      console.log(n2.key);
       console.log(`replacing node ${n1.cy.id} with node ${n2.cy.id}`);
       let cyN1 = this.getNode(n1);
+      if (cyN1.parent().length > 0) {
+        cyN1 = cyN1.parent();
+      }
       let options = {
         position: { x: cyN1.position("x"), y: cyN1.position("y") },
       };
@@ -347,6 +349,14 @@ class CytoscapeFacade {
     this.queueAnimation(() => {
       this.getNode(node).data(key, value);
       this.highlightNode(node);
+    });
+  }
+
+  updateDataQuietly(node, key, value) {
+    this.queueAnimation(() => {
+      this.getNode(node).data(key, value);
+      this.isReady = true;
+      // this.highlightNode(node);
     });
   }
 }

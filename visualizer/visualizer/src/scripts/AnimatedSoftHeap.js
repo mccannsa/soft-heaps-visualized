@@ -56,7 +56,6 @@ class AnimatedSoftHeap {
     }
 
     x.key = x.left.key;
-    this.cf.updateData(x, "key", x.left.key);
 
     // TODO: visualize
     if (x.set == null) {
@@ -65,7 +64,10 @@ class AnimatedSoftHeap {
       let temp = x.set.next;
       x.set.next = x.left.set.next;
       x.left.set.next = temp;
+      this.cf.updateDataQuietly(x, "corrupt", true);
     }
+
+    this.cf.updateData(x, "key", x.left.key);
 
     x.left.set = null;
 
