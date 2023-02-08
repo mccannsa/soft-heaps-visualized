@@ -27,6 +27,7 @@ class AnimatedSoftHeap {
     this.cf = new CytoscapeFacade(containerId, cyProps);
     this.numNodes = 0;
     this.numEdges = 0;
+    this.numParents = 0;
     this.ptr = nil;
   }
 
@@ -37,6 +38,7 @@ class AnimatedSoftHeap {
   defill(x, inserting) {
     this.fill(x, inserting);
     if (inserting && x.rank > this.T && x.rank % 2 == 0 && x.left != nil) {
+      this.cf.updateData(x, "corrupt", true);
       this.fill(x, inserting);
     }
   }
@@ -157,6 +159,7 @@ class AnimatedSoftHeap {
     this.cf.shiftAllNodes(100, 0);
     this.cf.addNode(x, {
       key: x.key,
+      corrupt: false
     });
 
     return x;
@@ -180,12 +183,22 @@ class AnimatedSoftHeap {
         right: `e${this.numEdges++}`,
         next: null,
       },
+      parent: `p${this.numParents++}`
     };
 
     // this.cf.startSync();
+    if (x.next && x.next.key !== Infinity) {
+      this.cf.removeEdge(x.cy.edges.next);
+    }
+    if (y.next && y.next.key !== Infinity) {
+      this.cf.removeEdge(y.cy.edges.next);
+    }
     this.cf.shiftNode(x, 0, 50);
     this.cf.shiftNode(y, 0, 50);
-    this.cf.addNode(z, z.cy.position.x, z.cy.position.y);
+    this.cf.addNodeById(z.cy.parent);
+    this.cf.addNode(z, { parent: z.cy.parent });
+    this.cf.moveNode(x, z.cy.parent);
+    this.cf.moveNode(y, z.cy.parent);
     this.cf.addEdge(z.cy.edges.left, z, x);
     this.cf.addEdge(z.cy.edges.right, z, y);
     // this.cf.endSync();
@@ -255,6 +268,10 @@ class AnimatedSoftHeap {
     return this.key_swap(
       this.meldable_meld(this.rank_swap(H1), this.rank_swap(H2))
     );
+  }
+
+  toggleAnimation() {
+    this.cf.toggleAnimation();
   }
 }
 
