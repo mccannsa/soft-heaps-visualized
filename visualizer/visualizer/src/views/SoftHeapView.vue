@@ -84,7 +84,7 @@ export default {
 
     delete_min() {
       let min = this.heap.find_min(this.heap.ptr);
-      this.heap = this.heap.delete_min(this.heap.ptr);
+      this.heap.ptr = this.heap.delete_min(this.heap.ptr);
       console.log(min);
     },
 

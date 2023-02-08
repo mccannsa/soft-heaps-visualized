@@ -249,7 +249,9 @@ class AnimatedSoftHeap {
     } else {
       H.set = null;
       let k = H.rank;
-      if (H.left == nil) {
+      if (H.left.key === Infinity) {
+        console.log(H);
+        this.cf.removeNode(H)
         H = H.next;
       } else {
         this.defill(H, false);

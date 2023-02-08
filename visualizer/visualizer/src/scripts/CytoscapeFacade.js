@@ -1,4 +1,5 @@
 import cytoscape from "cytoscape";
+import dagre from "cytoscape-dagre";
 
 class CytoscapeFacade {
   constructor(containerId, props) {
@@ -11,6 +12,7 @@ class CytoscapeFacade {
         props
       )
     );
+    cytoscape.use(dagre);
     this.queue = [];
     this.isReady = true;
     this.isSynchronized = false;
@@ -101,6 +103,7 @@ class CytoscapeFacade {
             },
             duration: this.duration,
             complete: () => {
+              // this.updateNodeLayout(node);
               this.isReady = true;
               console.log("queue ready");
             },
@@ -120,6 +123,7 @@ class CytoscapeFacade {
             },
             duration: this.duration,
             complete: () => {
+              // this.updateNodeLayout(node);
               this.isReady = true;
               console.log("queue ready");
             },
@@ -148,6 +152,7 @@ class CytoscapeFacade {
             },
             duration: this.duration,
             complete: () => {
+              // this.updateNodeLayoutById(id);
               this.isReady = true;
               console.log("queue ready");
             },
@@ -167,6 +172,7 @@ class CytoscapeFacade {
             },
             duration: this.duration,
             complete: () => {
+              // this.updateNodeLayoutById(id);
               this.isReady = true;
               console.log("queue ready");
             },
@@ -204,6 +210,14 @@ class CytoscapeFacade {
     });
   }
 
+  pushAnimation(animation) {
+    this.queue.unshift(
+      this.cy.animation({
+        complete: () => animation(),
+      })
+    );
+  }
+
   queueAnimation(animation) {
     this.queue.push(
       this.cy.animation({
@@ -215,7 +229,12 @@ class CytoscapeFacade {
   removeNode(node) {
     this.queueAnimation(() => {
       console.log(`removing node ${node.cy.id}`);
+      let parent = this.getNode(node).parent();
       this.cy.remove(`node#${node.cy.id}`);
+      if (parent.children("[id ^= 'n']").length === 0) {
+        console.log(`HERE ${parent.data("id")}`);
+        this.cy.remove(`node#${parent.data("id")}`)
+      }
       this.isReady = true;
     });
   }
@@ -356,7 +375,60 @@ class CytoscapeFacade {
     this.queueAnimation(() => {
       this.getNode(node).data(key, value);
       this.isReady = true;
-      // this.highlightNode(node);
+    });
+  }
+
+  updateNodeLayout(node) {
+    this.pushAnimation(() => {
+      console.log("updating layout");
+      let cyNode = this.getNode(node);
+      if (cyNode.parent().length > 0) {
+        console.log(`updating parent layout`);
+        cyNode = cyNode.parent();
+        cyNode.children().layout({
+          name: "breadthfirst",
+          fit: false, // whether to fit to viewport
+          animate: true, // whether to transition the node positions
+          animationDuration: this.duration, // duration of animation in ms if enabled
+          transform: function (node, position) {
+            // position.x = position.x + x;
+            // position.y = position.y + y;
+            return position;
+          },
+          stop: () => {
+            this.isReady = true;
+          }
+        }).run();
+      } else {
+        this.isReady = true;
+      }
+    });
+  }
+
+  updateNodeLayoutById(id) {
+    this.pushAnimation(() => {
+      console.log("updating layout");
+      let cyNode = this.cy.$(`node#${id}`);
+      if (cyNode.parent().length > 0) {
+        console.log(`updating parent layout`);
+        cyNode = cyNode.parent();
+        cyNode.children().layout({
+          name: "breadthfirst",
+          fit: false, // whether to fit to viewport
+          animate: true, // whether to transition the node positions
+          animationDuration: this.duration, // duration of animation in ms if enabled
+          transform: function (node, position) {
+            // position.x = position.x + x;
+            // position.y = position.y + y;
+            return position;
+          },
+          stop: () => {
+            this.isReady = true;
+          }
+        }).run();
+      } else {
+        this.isReady = true;
+      }
     });
   }
 }
