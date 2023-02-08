@@ -38,6 +38,7 @@ class AnimatedSoftHeap {
   defill(x, inserting) {
     this.fill(x, inserting);
     if (inserting && x.rank > this.T && x.rank % 2 == 0 && x.left != nil) {
+      this.cf.updateData(x, "corrupt", true);
       this.fill(x, inserting);
     }
   }
@@ -158,21 +159,11 @@ class AnimatedSoftHeap {
     this.cf.shiftAllNodes(100, 0);
     this.cf.addNode(x, {
       key: x.key,
+      corrupt: false
     });
 
     return x;
   }
-
-  // getSubtree(node) {
-  //   let x = []
-  //   if (node.cy) {
-  //     x.push(node);
-  //     x.concat(this.getSubtree(node.left));
-  //     x.concat(this.getSubtree(node.right));
-  //     return x;
-  //   }
-  //   return undefined;
-  // }
 
   link(x, y) {
     let z = new Node();
@@ -277,6 +268,10 @@ class AnimatedSoftHeap {
     return this.key_swap(
       this.meldable_meld(this.rank_swap(H1), this.rank_swap(H2))
     );
+  }
+
+  toggleAnimation() {
+    this.cf.toggleAnimation();
   }
 }
 

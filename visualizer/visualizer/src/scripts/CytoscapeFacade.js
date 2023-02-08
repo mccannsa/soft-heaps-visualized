@@ -19,6 +19,7 @@ class CytoscapeFacade {
       this.run();
     }, 100);
     this.numParents = 0;
+    this.animate = true;
   }
 
   addEdge(id, source, target) {
@@ -56,6 +57,10 @@ class CytoscapeFacade {
     })
   }
 
+  doubleSpeed() {
+    this.duration /= 2;
+  }
+
   endSync() {
     this.queueAnimation(() => {
       console.log("ending sync");
@@ -76,46 +81,99 @@ class CytoscapeFacade {
 
   getNodesWith(properties) {}
 
+  halveSpeed() {
+    this.duration *= 2;
+  }
+
   highlightNode(node, props = {}) {
     let cyNode = this.getNode(node);
-    let options = {
-      style: {
-        "background-color": "orchid",
-      },
-      complete: () => {
-        cyNode.animate({
-          style: {
-            "background-color": "lavender",
-          },
-          complete: () => {
-            this.isReady = true;
-            console.log("queue ready");
-          },
-        });
-      },
-    };
+    let options = undefined;
+    if (cyNode.data("corrupt")) {
+      options = {
+        style: {
+          "background-color": "black",
+        },
+        duration: this.duration,
+        complete: () => {
+          cyNode.animate({
+            style: {
+              "background-color": "red",
+            },
+            duration: this.duration,
+            complete: () => {
+              this.isReady = true;
+              console.log("queue ready");
+            },
+          });
+        },
+      };
+    } else {
+      options = {
+        style: {
+          "background-color": "orchid",
+        },
+        duration: this.duration,
+        complete: () => {
+          cyNode.animate({
+            style: {
+              "background-color": "lavender",
+            },
+            duration: this.duration,
+            complete: () => {
+              this.isReady = true;
+              console.log("queue ready");
+            },
+          });
+        },
+      };
+    }
+
     options = Object.assign(options, props);
     cyNode.animate(options);
   }
 
   highlightNodeById(id, props = {}) {
     let cyNode = this.cy.$(`node#${id}`);
-    let options = {
-      style: {
-        "background-color": "orchid",
-      },
-      complete: () => {
-        cyNode.animate({
-          style: {
-            "background-color": "lavender",
-          },
-          complete: () => {
-            this.isReady = true;
-            console.log("queue ready");
-          },
-        });
-      },
-    };
+    let options = undefined;
+    if (cyNode.data("corrupt")) {
+      options = {
+        style: {
+          "background-color": "black",
+        },
+        duration: this.duration,
+        complete: () => {
+          cyNode.animate({
+            style: {
+              "background-color": "red",
+            },
+            duration: this.duration,
+            complete: () => {
+              this.isReady = true;
+              console.log("queue ready");
+            },
+          });
+        },
+      };
+    } else {
+      options = {
+        style: {
+          "background-color": "orchid",
+        },
+        duration: this.duration,
+        complete: () => {
+          cyNode.animate({
+            style: {
+              "background-color": "lavender",
+            },
+            duration: this.duration,
+            complete: () => {
+              this.isReady = true;
+              console.log("queue ready");
+            },
+          });
+        },
+      };
+    }
     options = Object.assign(options, props);
     cyNode.animate(options);
   }
@@ -178,7 +236,7 @@ class CytoscapeFacade {
       let options = {
         position: { x: cyN1.position("x"), y: cyN1.position("y") },
       };
-      this.removeNode(n1);
+      this.cy.remove(`node#${n1.cy.id}`);
       this.highlightNode(n2, options);
     });
   }
@@ -186,7 +244,7 @@ class CytoscapeFacade {
   run() {
     if (this.isSynchronized && this.queue.length > 0) {
       this.queue.shift().play();
-    } else if (this.isReady && this.queue.length > 0) {
+    } else if (this.animate && this.isReady && this.queue.length > 0) {
       this.isReady = false;
       this.queue.shift().play();
     }
@@ -199,7 +257,7 @@ class CytoscapeFacade {
         name: "preset",
         fit: false, // whether to fit to viewport
         animate: true, // whether to transition the node positions
-        animationDuration: 400, // duration of animation in ms if enabled
+        animationDuration: this.duration, // duration of animation in ms if enabled
         transform: function (node, position) {
           position.x = position.x + x;
           position.y = position.y + y;
@@ -211,19 +269,6 @@ class CytoscapeFacade {
       };
       this.cy.layout(options).run();
     });
-  }
-
-  /*
-   * returns list of cytoscape nodes
-   */
-  getSubtree(node) {
-    let nodes = [];
-    if (node.cy && node.cy.id) {
-      nodes.push(this.getNode(node));
-      nodes.concat(this.getSubtree(node.left));
-      nodes.concat(this.getSubtree(node.right));
-    }
-    return nodes;
   }
 
   shiftNode(node, x, y) {
@@ -291,6 +336,11 @@ class CytoscapeFacade {
       this.highlightNodeById(cyN1.data("id"), n1Options);
       this.highlightNodeById(cyN2.data("id"), n2Options);
     });
+  }
+
+  toggleAnimation() {
+    this.animate = !this.animate;
+    console.log(`toggle ${this.animate}`);
   }
 
   updateData(node, key, value) {

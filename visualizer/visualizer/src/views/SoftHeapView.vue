@@ -4,6 +4,7 @@
   </div>
   <br />
   <div>
+    Operations:
     <button @click="find_min()">find-min</button>
     <button @click="delete_min()">delete-min</button>
     <button @click="insert(this.input)">insert</button>
@@ -14,6 +15,13 @@
       id="input"
       v-on:keypress="submit"
     />
+  </div>
+  <br />
+  <div>
+    Animation Controls:
+    <button @click="toggleAnimation()">Toggle Animation</button>
+    <button @click="this.heap.cf.halveSpeed()">0.5x</button>
+    <button @click="this.heap.cf.doubleSpeed()">2x</button>
   </div>
   <br />
   <div>
@@ -79,6 +87,10 @@ export default {
       this.heap = this.heap.delete_min(this.heap.ptr);
       console.log(min);
     },
+
+    toggleAnimation() {
+      this.heap.toggleAnimation();
+    }
   },
 
   mounted() {
@@ -98,6 +110,15 @@ export default {
           selector: "node[id ^= 'n']",
           style: {
             "background-color": "lavender",
+            "border-width": 2,
+            "border-color": "black",
+            "text-valign": "center",
+          },
+        },
+        {
+          selector: "node[?corrupt]",
+          style: {
+            "background-color": "red",
             "border-width": 2,
             "border-color": "black",
             "text-valign": "center",
