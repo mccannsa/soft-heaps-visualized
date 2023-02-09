@@ -1,5 +1,5 @@
 import cytoscape from "cytoscape";
-import dagre from "cytoscape-dagre";
+// import dagre from "cytoscape-dagre";
 
 class CytoscapeFacade {
   constructor(containerId, props) {
@@ -12,7 +12,7 @@ class CytoscapeFacade {
         props
       )
     );
-    cytoscape.use(dagre);
+    // cytoscape.use(dagre);
     this.queue = [];
     this.isReady = true;
     this.isSynchronized = false;
@@ -441,24 +441,8 @@ class CytoscapeFacade {
     });
   }
 
-  twentyFivePercent() {
-    this.duration = 1600;
-  }
-
-  fiftyPercent() {
-    this.duration = 800;
-  }
-
-  oneHundredPercent() {
-    this.duration = 400;
-  }
-
-  twoHundredPercent() {
-    this.duration = 200;
-  }
-
-  fourHundredPercent() {
-    this.duration = 100;
+  setDuration(duration) {
+    this.duration = duration;
   }
 
   step() {
