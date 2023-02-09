@@ -22,6 +22,7 @@ class CytoscapeFacade {
     }, 1);
     this.numParents = 0;
     this.animate = true;
+    this.inStepMode = false;
   }
 
   addEdge(id, source, target) {
@@ -53,10 +54,10 @@ class CytoscapeFacade {
     this.queueAnimation(() => {
       this.cy.add({
         group: "nodes",
-        data: {id: id}
+        data: { id: id },
       });
       this.isReady = true;
-    })
+    });
   }
 
   doubleSpeed() {
@@ -196,9 +197,7 @@ class CytoscapeFacade {
 
   moveNode(node, parentId) {
     this.queueAnimation(() => {
-      console.log(
-        `moving node ${node.cy.id} to parent ${parentId}`
-      );
+      console.log(`moving node ${node.cy.id} to parent ${parentId}`);
       if (node.cy) {
         let cyNode = this.getNode(node);
         if (cyNode.parent().length > 0) {
@@ -233,7 +232,7 @@ class CytoscapeFacade {
       this.cy.remove(`node#${node.cy.id}`);
       if (parent.children("[id ^= 'n']").length === 0) {
         console.log(`HERE ${parent.data("id")}`);
-        this.cy.remove(`node#${parent.data("id")}`)
+        this.cy.remove(`node#${parent.data("id")}`);
       }
       this.isReady = true;
     });
@@ -338,7 +337,11 @@ class CytoscapeFacade {
       let n2HasParent = cyN2.parent().length > 0;
 
       if (n1HasParent && n2HasParent && cyN1.parent() === cyN2.parent()) {
-        console.log(`${n1.cy.id} parent: ${cyN1.parent()}; ${n2.cy.id} parent: ${cyN2.parent()}`);
+        console.log(
+          `${n1.cy.id} parent: ${cyN1.parent()}; ${
+            n2.cy.id
+          } parent: ${cyN2.parent()}`
+        );
       } else {
         if (n1HasParent) {
           cyN1 = cyN1.parent();
@@ -385,20 +388,23 @@ class CytoscapeFacade {
       if (cyNode.parent().length > 0) {
         console.log(`updating parent layout`);
         cyNode = cyNode.parent();
-        cyNode.children().layout({
-          name: "breadthfirst",
-          fit: false, // whether to fit to viewport
-          animate: true, // whether to transition the node positions
-          animationDuration: this.duration, // duration of animation in ms if enabled
-          transform: function (node, position) {
-            // position.x = position.x + x;
-            // position.y = position.y + y;
-            return position;
-          },
-          stop: () => {
-            this.isReady = true;
-          }
-        }).run();
+        cyNode
+          .children()
+          .layout({
+            name: "breadthfirst",
+            fit: false, // whether to fit to viewport
+            animate: true, // whether to transition the node positions
+            animationDuration: this.duration, // duration of animation in ms if enabled
+            transform: function (node, position) {
+              // position.x = position.x + x;
+              // position.y = position.y + y;
+              return position;
+            },
+            stop: () => {
+              this.isReady = true;
+            },
+          })
+          .run();
       } else {
         this.isReady = true;
       }
@@ -412,24 +418,57 @@ class CytoscapeFacade {
       if (cyNode.parent().length > 0) {
         console.log(`updating parent layout`);
         cyNode = cyNode.parent();
-        cyNode.children().layout({
-          name: "breadthfirst",
-          fit: false, // whether to fit to viewport
-          animate: true, // whether to transition the node positions
-          animationDuration: this.duration, // duration of animation in ms if enabled
-          transform: function (node, position) {
-            // position.x = position.x + x;
-            // position.y = position.y + y;
-            return position;
-          },
-          stop: () => {
-            this.isReady = true;
-          }
-        }).run();
+        cyNode
+          .children()
+          .layout({
+            name: "breadthfirst",
+            fit: false, // whether to fit to viewport
+            animate: true, // whether to transition the node positions
+            animationDuration: this.duration, // duration of animation in ms if enabled
+            transform: function (node, position) {
+              // position.x = position.x + x;
+              // position.y = position.y + y;
+              return position;
+            },
+            stop: () => {
+              this.isReady = true;
+            },
+          })
+          .run();
       } else {
         this.isReady = true;
       }
     });
+  }
+
+  twentyFivePercent() {
+    this.duration = 1600;
+  }
+
+  fiftyPercent() {
+    this.duration = 800;
+  }
+
+  oneHundredPercent() {
+    this.duration = 400;
+  }
+
+  twoHundredPercent() {
+    this.duration = 200;
+  }
+
+  fourHundredPercent() {
+    this.duration = 100;
+  }
+
+  step() {
+    if (this.isStopped() && this.queue.length > 0) {
+      this.queue.shift().play();
+    }
+  }
+
+  isStopped() {
+    return !this.animate;
   }
 }
 

@@ -161,7 +161,7 @@ class AnimatedSoftHeap {
     this.cf.shiftAllNodes(100, 0);
     this.cf.addNode(x, {
       key: x.key,
-      corrupt: false
+      corrupt: false,
     });
 
     return x;
@@ -185,7 +185,7 @@ class AnimatedSoftHeap {
         right: `e${this.numEdges++}`,
         next: null,
       },
-      parent: `p${this.numParents++}`
+      parent: `p${this.numParents++}`,
     };
 
     // this.cf.startSync();
@@ -251,7 +251,7 @@ class AnimatedSoftHeap {
       let k = H.rank;
       if (H.left.key === Infinity) {
         console.log(H);
-        this.cf.removeNode(H)
+        this.cf.removeNode(H);
         H = H.next;
       } else {
         this.defill(H, false);

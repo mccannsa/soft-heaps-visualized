@@ -20,8 +20,12 @@
   <div>
     Animation Controls:
     <button @click="toggleAnimation()">Toggle Animation</button>
-    <button @click="this.heap.cf.halveSpeed()">0.5x</button>
-    <button @click="this.heap.cf.doubleSpeed()">2x</button>
+    <button @click="this.step()" :disabled="!this.isStopped">Step</button>
+    <button @click="this.heap.cf.twentyFivePercent()">25%</button>
+    <button @click="this.heap.cf.fiftyPercent()">50%</button>
+    <button @click="this.heap.cf.oneHundredPercent()">100%</button>
+    <button @click="this.heap.cf.twoHundredPercent()">200%</button>
+    <button @click="this.heap.cf.fourHundredPercent()">400%</button>
   </div>
   <br />
   <div>
@@ -43,6 +47,7 @@ export default {
       eps: 0.5,
       input: "",
       removed: [],
+      isStopped: false
     };
   },
   methods: {
@@ -89,7 +94,12 @@ export default {
     },
 
     toggleAnimation() {
+      this.isStopped = !this.isStopped;
       this.heap.toggleAnimation();
+    },
+
+    step() {
+      this.heap.cf.step();
     }
   },
 
