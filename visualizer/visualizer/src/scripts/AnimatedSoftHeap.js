@@ -35,15 +35,15 @@ class AnimatedSoftHeap {
   //   return nil;
   // }
 
-  defill(x, inserting) {
-    this.fill(x, inserting);
+  async defill(x, inserting) {
+    await this.fill(x, inserting);
     if (inserting && x.rank > this.T && x.rank % 2 == 0 && x.left != nil) {
       this.cf.updateData(x, "corrupt", true);
-      this.fill(x, inserting);
+      await this.fill(x, inserting);
     }
   }
 
-  fill(x, inserting) {
+  async fill(x, inserting) {
     if (x.left != nil && x.right != nil && x.left.key > x.right.key) {
       this.cf.swapNodes(x.left, x.right);
       let tempEdge = x.cy.edges.left;
@@ -80,11 +80,11 @@ class AnimatedSoftHeap {
       x.left = x.right;
       x.right = nil;
     } else {
-      this.defill(x.left, inserting);
+      await this.defill(x.left, inserting);
     }
   }
 
-  rank_swap(H) {
+  async rank_swap(H) {
     let x = H.next;
     if (H.rank <= x.rank) {
       return H;
@@ -106,7 +106,7 @@ class AnimatedSoftHeap {
     return x;
   }
 
-  key_swap(H) {
+  async key_swap(H) {
     let x = H.next;
     if (H.key < x.key) {
       return H;
@@ -128,15 +128,15 @@ class AnimatedSoftHeap {
     return x;
   }
 
-  reorder(H, k) {
+  async reorder(H, k) {
     if (H.next.rank < k) {
-      H = this.rank_swap(H);
-      H.next = this.reorder(H.next, k);
+      H = await this.rank_swap(H);
+      H.next = await this.reorder(H.next, k);
     }
     return this.key_swap(H);
   }
 
-  make_root(elem) {
+  async make_root(elem) {
     let x = new Node();
     elem.next = elem;
     x.set = elem;
@@ -145,29 +145,21 @@ class AnimatedSoftHeap {
     x.left = nil;
     x.right = nil;
     x.next = nil;
-    x.cy = {
-      id: `n${this.numNodes++}`,
-      position: {
-        x: 100,
-        y: 100,
-      },
-      edges: {
-        left: null,
-        right: null,
-        next: null,
-      },
-    };
+    x.cy = {};
 
-    this.cf.shiftAllNodes(100, 0);
-    this.cf.addNode(x, {
+    await this.cf.shiftAllNodes(100, 0);
+    let id = await this.cf.addNode(100, 100, {
       key: x.key,
       corrupt: false
     });
 
-    return x;
+    if (id === -1) return Promise.reject('addfail');
+
+    x.cy.id = id;
+    return Promise.resolve(x);
   }
 
-  link(x, y) {
+  async link(x, y) {
     let z = new Node();
     z.set = null;
     z.rank = x.rank + 1;
@@ -175,43 +167,38 @@ class AnimatedSoftHeap {
     z.right = y;
 
     z.cy = {
-      id: `n${this.numNodes++}`,
-      position: {
-        x: Math.abs((x.cy.position.x + y.cy.position.x) / 2),
-        y: x.cy.position.y,
-      },
+      id: null,
       edges: {
-        left: `e${this.numEdges++}`,
-        right: `e${this.numEdges++}`,
+        left: null,
+        right: null,
         next: null,
       },
-      parent: `p${this.numParents++}`
+      parent: null
     };
 
-    // this.cf.startSync();
-    if (x.next && x.next.key !== Infinity) {
-      this.cf.removeEdge(x.cy.edges.next);
+    let zPos = {
+      x: this.cf.getNodePosition(z.left.cy.id).x + this.cf.getNodePosition(z.right.cy.id).y / 2,
+      y: this.cf.getNodePosition(z.left.cy.id).x,
     }
-    if (y.next && y.next.key !== Infinity) {
-      this.cf.removeEdge(y.cy.edges.next);
-    }
-    this.cf.shiftNode(x, 0, 50);
-    this.cf.shiftNode(y, 0, 50);
-    this.cf.addNodeById(z.cy.parent);
-    this.cf.addNode(z, { parent: z.cy.parent });
-    this.cf.moveNode(x, z.cy.parent);
-    this.cf.moveNode(y, z.cy.parent);
-    this.cf.addEdge(z.cy.edges.left, z, x);
-    this.cf.addEdge(z.cy.edges.right, z, y);
-    // this.cf.endSync();
 
-    this.defill(z, true);
+    this.cf.shiftNode(x.cy.id, 0, 50);
+    await this.cf.shiftNode(y.cy.id, 0, 50);
+
+    z.cy.parent = await this.cf.addCompoundNode();
+    z.cy.id = await this.cf.addNode(zPos.x, zPos.y, { parent: z.cy.parent });
+
+    this.cf.moveNode(z.left.cy.id, z.cy.parent);
+    this.cf.moveNode(z.right.cy.id, z.cy.parent);
+    z.cy.edges.left = this.cf.addEdge(z.cy.id, z.left.cy.id);
+    z.cy.edges.right = await this.cf.addEdge(z.cy.id, z.right.cy.id);
+
+    await this.defill(z, true);
     return z;
   }
 
-  meldable_insert(x, H) {
+  async meldable_insert(x, H) {
     if (x.rank < H.rank) {
-      x.next = this.key_swap(H);
+      x.next = await this.key_swap(H);
       // add an edge to the next node if that node is not nil
       if (H.key !== Infinity) {
         x.cy.edges.next = `e${this.numEdges++}`;
@@ -219,10 +206,12 @@ class AnimatedSoftHeap {
       }
       return x;
     }
-    return this.meldable_insert(this.link(x, H), this.rank_swap(H.next));
+    console.log(x.key);
+    console.log(H.key);
+    return await this.meldable_insert(await this.link(x, H), await this.rank_swap(H.next));
   }
 
-  meldable_meld(H1, H2) {
+  async meldable_meld(H1, H2) {
     if (H1.rank > H2.rank) {
       let temp = H1;
       H1 = H2;
@@ -233,7 +222,7 @@ class AnimatedSoftHeap {
       return H1;
     }
 
-    this.meldable_insert(H1, this.meldable_meld(this.rank_swap(H1.next), H2));
+    return await this.meldable_insert(H1, await this.meldable_meld(await this.rank_swap(H1.next), H2));
   }
 
   find_min(H) {
@@ -241,7 +230,7 @@ class AnimatedSoftHeap {
     return { item: H.set.next, key: H.key };
   }
 
-  delete_min(H) {
+  async delete_min(H) {
     let elem = H.set.next;
     if (elem.next != elem) {
       H.set.next = elem.next;
@@ -251,19 +240,19 @@ class AnimatedSoftHeap {
       let k = H.rank;
       if (H.left.key === Infinity) {
         console.log(H);
-        this.cf.removeNode(H)
+        this.cf.removeNode(H);
         H = H.next;
       } else {
-        this.defill(H, false);
+        await this.defill(H, false);
       }
-      H = this.reorder(H, k);
+      H = await this.reorder(H, k);
       return H;
     }
   }
 
-  insert(elem, H) {
-    H = this.key_swap(
-      this.meldable_insert(this.make_root(elem), this.rank_swap(H))
+  async insert(elem, H) {
+    H = await this.key_swap(
+      await this.meldable_insert(await this.make_root(elem), await this.rank_swap(H))
     );
     return H;
   }

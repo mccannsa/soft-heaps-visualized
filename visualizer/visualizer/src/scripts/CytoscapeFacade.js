@@ -1,5 +1,4 @@
 import cytoscape from "cytoscape";
-import dagre from "cytoscape-dagre";
 
 class CytoscapeFacade {
   constructor(containerId, props) {
@@ -12,11 +11,11 @@ class CytoscapeFacade {
         props
       )
     );
-    cytoscape.use(dagre);
+    this.numNodes = 0;
+    this.numEdges = 0;
     this.queue = [];
     this.isReady = true;
-    this.isSynchronized = false;
-    this.duration = 400; // animation duration in milliseconds
+    this.duration = 500; // animation duration in milliseconds
     this.intervalId = setInterval(() => {
       this.run();
     }, 1);
@@ -24,29 +23,47 @@ class CytoscapeFacade {
     this.animate = true;
   }
 
-  addEdge(id, source, target) {
-    this.queueAnimation(() => {
-      console.log(`adding edge ${id} from ${source.cy.id} to ${target.cy.id}`);
-      this.cy.add({
-        group: "edges",
-        data: { id: id, source: source.cy.id, target: target.cy.id },
-      });
-      this.isReady = true;
-    });
+  async addEdge(sourceId, targetId) {
+    let id = `e${this.numEdges++}`;
+    console.log(`adding edge ${id}`);
+    let eles = this.cy.add({
+      group: "edges",
+      data: { id: id, source: sourceId, target: targetId }
+    })
+
+    if (eles.length > 0) {
+      return Promise.resolve(id);
+    }
+    return Promise.reject(-1);
   }
 
-  addNode(node, props = {}) {
-    this.queueAnimation(() => {
-      console.log(`adding node ${node.cy.id}`);
-      let data = { id: node.cy.id };
-      data = Object.assign(data, props); // adds any properties in props to data
-      this.cy.add({
-        group: "nodes",
-        data: data,
-        position: { x: node.cy.position.x, y: node.cy.position.y },
-      });
-      this.highlightNode(node);
+  async addCompoundNode() {
+    let id = `n${this.numNodes++}`;
+    let eles = this.cy.add({
+      group: "nodes",
+      data: { id: id, isParent: true }
     });
+    
+    if (eles.length > 0)
+      return Promise.resolve(id);
+
+    return Promise.reject(-1);
+  }
+
+  async addNode(x = 0, y = 0, props = {}) {
+    let id = `n${this.numNodes++}`;
+    console.log(`adding node ${id}`);
+    let eles = this.cy.add({
+      group: "nodes",
+      data: Object.assign({ id: id }, props),
+      position: { x: x, y: y },
+    });
+
+    if (eles.length > 0) {
+      await this.highlightNode(id);
+      return Promise.resolve(id);
+    }
+    return Promise.reject(-1);
   }
 
   addNodeById(id) {
@@ -63,16 +80,6 @@ class CytoscapeFacade {
     this.duration /= 2;
   }
 
-  endSync() {
-    this.queueAnimation(() => {
-      console.log("ending sync");
-      this.isSynchronized = false;
-      setTimeout(() => {
-        this.isReady = true;
-      }, this.duration);
-    });
-  }
-
   getNode(node) {
     return this.cy.$(`node#${node.cy.id}`);
   }
@@ -81,12 +88,33 @@ class CytoscapeFacade {
     this.cy.$(`node#${id}`);
   }
 
+  getNodePosition(id) {
+    return this.cy.$(`node#${id}`).position();
+  }
+
   getNodesWith(properties) {}
 
   halveSpeed() {
     this.duration *= 2;
   }
 
+  async highlightNode(id, options) {
+    let node = this.cy.$(`node#${id}`);
+    let ani = node.animation({
+      style: {
+        "background-color": "orchid"
+      },
+      duration: this.duration
+    });
+
+    return ani.play().promise('complete').then(() => {
+      ani.reverse().play().promise('complete').then(() => {
+        return;
+      });
+    });
+  }
+
+  /*
   highlightNode(node, props = {}) {
     let cyNode = this.getNode(node);
     let options = undefined;
@@ -135,54 +163,7 @@ class CytoscapeFacade {
     options = Object.assign(options, props);
     cyNode.animate(options);
   }
-
-  highlightNodeById(id, props = {}) {
-    let cyNode = this.cy.$(`node#${id}`);
-    let options = undefined;
-    if (cyNode.data("corrupt")) {
-      options = {
-        style: {
-          "background-color": "black",
-        },
-        duration: this.duration,
-        complete: () => {
-          cyNode.animate({
-            style: {
-              "background-color": "red",
-            },
-            duration: this.duration,
-            complete: () => {
-              // this.updateNodeLayoutById(id);
-              this.isReady = true;
-              console.log("queue ready");
-            },
-          });
-        },
-      };
-    } else {
-      options = {
-        style: {
-          "background-color": "orchid",
-        },
-        duration: this.duration,
-        complete: () => {
-          cyNode.animate({
-            style: {
-              "background-color": "lavender",
-            },
-            duration: this.duration,
-            complete: () => {
-              // this.updateNodeLayoutById(id);
-              this.isReady = true;
-              console.log("queue ready");
-            },
-          });
-        },
-      };
-    }
-    options = Object.assign(options, props);
-    cyNode.animate(options);
-  }
+  */
 
   moveEdge(id, source, target) {
     this.queueAnimation(() => {
@@ -194,20 +175,13 @@ class CytoscapeFacade {
     });
   }
 
-  moveNode(node, parentId) {
-    this.queueAnimation(() => {
-      console.log(
-        `moving node ${node.cy.id} to parent ${parentId}`
-      );
-      if (node.cy) {
-        let cyNode = this.getNode(node);
-        if (cyNode.parent().length > 0) {
-          cyNode = cyNode.parent();
-        }
-        cyNode.move({ parent: parentId });
-      }
-      this.isReady = true;
-    });
+  async moveNode(nodeId, parentId) {
+    let node = this.cy.$(`node#${nodeId}`);
+    if (node.parent().length > 0) {
+      node = node.parent();
+    }
+    node.move({ parent: parentId });
+    return Promise.resolve(parentId);
   }
 
   pushAnimation(animation) {
@@ -263,16 +237,14 @@ class CytoscapeFacade {
   }
 
   run() {
-    if (this.isSynchronized && this.queue.length > 0) {
-      this.queue.shift().play();
-    } else if (this.animate && this.isReady && this.queue.length > 0) {
+    if (this.animate && this.isReady && this.queue.length > 0) {
       this.isReady = false;
       this.queue.shift().play();
     }
   }
 
-  shiftAllNodes(x, y) {
-    this.queueAnimation(() => {
+  async shiftAllNodes(x, y) {
+    // this.queueAnimation(() => {
       console.log("shifting all nodes");
       let options = {
         name: "preset",
@@ -285,28 +257,45 @@ class CytoscapeFacade {
           return position;
         },
         stop: () => {
-          this.isReady = true;
+          // this.isReady = true;
+          return "stopped";
         },
       };
-      this.cy.layout(options).run();
-    });
+      return this.cy.layout(options).run().promiseOn('layoutstop').then(() => {
+        return true;
+      });
+    // });
   }
 
-  shiftNode(node, x, y) {
-    this.queueAnimation(() => {
-      let cyNode = this.getNode(node);
-      if (cyNode.parent().length > 0) {
-        console.log(`parent of ${node.cy.id}: ${cyNode.parent()}`);
-        cyNode = cyNode.parent();
-      }
-      let options = {
-        position: {
-          x: cyNode.position("x") + x,
-          y: cyNode.position("y") + y,
-        },
-      };
-      this.highlightNodeById(cyNode.data("id"), options);
+  async shiftNode(id, x, y) {
+    // this.queueAnimation(() => {
+    //   let cyNode = this.getNode(node);
+    //   if (cyNode.parent().length > 0) {
+    //     console.log(`parent of ${node.cy.id}: ${cyNode.parent()}`);
+    //     cyNode = cyNode.parent();
+    //   }
+    //   let options = {
+    //     position: {
+    //       x: cyNode.position("x") + x,
+    //       y: cyNode.position("y") + y,
+    //     },
+    //   };
+    //   this.highlightNodeById(cyNode.data("id"), options);
+    // });
+
+    let node = this.cy.$(`node#${id}`);
+    let ani = node.animation({
+      position: {
+        x: node.position('x') + x,
+        y: node.position('y') + y
+      },
+      duration: this.duration
     });
+    node.addClass("highlighted");
+    return ani.play().promise('completed').then(() => {
+      node.removeClass("highlighted");
+      return;
+    })
   }
 
   shiftNodeTo(node, x, y) {
@@ -319,16 +308,7 @@ class CytoscapeFacade {
     });
   }
 
-  startSync() {
-    this.queueAnimation(() => {
-      console.log("starting sync");
-      this.isSynchronized = true;
-      this.isReady = false;
-      this.run();
-    });
-  }
-
-  swapNodes(n1, n2) {
+  async swapNodes(n1, n2) {
     this.queueAnimation(() => {
       console.log(`swapping nodes ${n1.cy.id} and ${n2.cy.id}`);
       let cyN1 = this.getNode(n1);

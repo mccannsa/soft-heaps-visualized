@@ -52,7 +52,7 @@ export default {
       }
     },
 
-    insert(input) {
+    async insert(input) {
       const tokens = input.split(" ");
       let items = [];
 
@@ -71,9 +71,9 @@ export default {
       }
       this.input = "";
 
-      items.forEach((element) => {
+      items.forEach(async (element) => {
         let item = new Item(element);
-        this.heap.ptr = this.heap.insert(item, this.heap.ptr);
+        this.heap.ptr = await this.heap.insert(item, this.heap.ptr);
       });
     },
 
@@ -101,6 +101,12 @@ export default {
     let cyProps = {
       style: [
         {
+          selector: ".highlighted",
+          style: {
+            "background-color": "orchid"
+          }
+        },
+        {
           selector: "[key]",
           style: {
             label: "data(key)",
@@ -125,10 +131,10 @@ export default {
           },
         },
         {
-          selector: "[id ^= 'p']",
+          selector: "node[?isParent]",
           style: {
             "background-opacity": "0",
-            // "border-opacity": "0"
+            "border-opacity": ".25"
           },
         },
         {
