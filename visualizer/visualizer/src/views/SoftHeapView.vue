@@ -147,12 +147,6 @@ export default {
             "curve-style": "straight",
           },
         },
-        {
-          selector: "[id ^= 'x']",
-          style: {
-            "line-color": "red",
-          },
-        },
       ],
     };
     this.heap = new AnimatedSoftHeap("cy", cyProps, this.eps);

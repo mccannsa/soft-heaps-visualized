@@ -45,7 +45,7 @@ class AnimatedSoftHeap {
 
   async fill(x, inserting) {
     if (x.left != nil && x.right != nil && x.left.key > x.right.key) {
-      this.cf.swapNodes(x.left, x.right);
+      await this.cf.swapNodes(x.left.cy.id, x.right.cy.id)
       let tempEdge = x.cy.edges.left;
       x.cy.edges.left = x.cy.edges.right;
       x.cy.edges.right = tempEdge;
@@ -73,9 +73,9 @@ class AnimatedSoftHeap {
 
     if (x.left.left.key == Infinity) {
       if (x.right.cy) {
-        this.cf.replaceNode(x.left, x.right);
+        await this.cf.replaceNode(x.left.cy.id, x.right.cy.id);
       } else {
-        this.cf.removeNode(x.left);
+        await this.cf.removeNode(x.left.cy.id);
       }
       x.left = x.right;
       x.right = nil;
@@ -176,13 +176,21 @@ class AnimatedSoftHeap {
       parent: null
     };
 
-    let zPos = {
-      x: this.cf.getNodePosition(z.left.cy.id).x + this.cf.getNodePosition(z.right.cy.id).y / 2,
-      y: this.cf.getNodePosition(z.left.cy.id).x,
-    }
+    // let xPos = this.cf.getNodePosition(x.cy.id);
+    // let yPos = await this.cf.getNodePosition(y.cy.id);
+    
+    let xPos = await this.cf.shiftNode(x.cy.id, 0, 50);
+    let yPos = await this.cf.shiftNode(y.cy.id, 0, 50);
 
-    this.cf.shiftNode(x.cy.id, 0, 50);
-    await this.cf.shiftNode(y.cy.id, 0, 50);
+    console.log();
+    console.log(xPos);
+    console.log(yPos);
+    console.log();
+    
+    let zPos = {
+      x: (xPos.x + yPos.x) / 2,
+      y: xPos.y - 50,
+    }
 
     z.cy.parent = await this.cf.addCompoundNode();
     z.cy.id = await this.cf.addNode(zPos.x, zPos.y, { parent: z.cy.parent });
@@ -201,13 +209,10 @@ class AnimatedSoftHeap {
       x.next = await this.key_swap(H);
       // add an edge to the next node if that node is not nil
       if (H.key !== Infinity) {
-        x.cy.edges.next = `e${this.numEdges++}`;
-        this.cf.addEdge(x.cy.edges.next, x, H);
+        x.cy.edges.next = await this.cf.addEdge(x.cy.id, H.cy.id);
       }
       return x;
     }
-    console.log(x.key);
-    console.log(H.key);
     return await this.meldable_insert(await this.link(x, H), await this.rank_swap(H.next));
   }
 

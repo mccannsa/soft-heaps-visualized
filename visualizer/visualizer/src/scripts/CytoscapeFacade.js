@@ -88,7 +88,7 @@ class CytoscapeFacade {
     this.cy.$(`node#${id}`);
   }
 
-  getNodePosition(id) {
+  async getNodePosition(id) {
     return this.cy.$(`node#${id}`).position();
   }
 
@@ -98,14 +98,14 @@ class CytoscapeFacade {
     this.duration *= 2;
   }
 
-  async highlightNode(id, options) {
+  async highlightNode(id, options = {}) {
     let node = this.cy.$(`node#${id}`);
-    let ani = node.animation({
+    let ani = node.animation(Object.assign({
       style: {
         "background-color": "orchid"
       },
       duration: this.duration
-    });
+    }, options));
 
     return ani.play().promise('complete').then(() => {
       ani.reverse().play().promise('complete').then(() => {
@@ -200,17 +200,13 @@ class CytoscapeFacade {
     );
   }
 
-  removeNode(node) {
-    this.queueAnimation(() => {
-      console.log(`removing node ${node.cy.id}`);
-      let parent = this.getNode(node).parent();
-      this.cy.remove(`node#${node.cy.id}`);
-      if (parent.children("[id ^= 'n']").length === 0) {
-        console.log(`HERE ${parent.data("id")}`);
-        this.cy.remove(`node#${parent.data("id")}`)
-      }
-      this.isReady = true;
-    });
+  async removeNode(id) {
+    console.log(`removing node ${id}`);
+    let parent = this.cy.$(`node#${id}`).parent();
+    this.cy.remove(`node#${id}`);
+    if (parent.children("[id ^= 'n']").length === 0) {
+      this.cy.remove(`node#${parent.data("id")}`)
+    }
   }
 
   removeEdge(id) {
@@ -221,19 +217,17 @@ class CytoscapeFacade {
     });
   }
 
-  replaceNode(n1, n2) {
-    this.queueAnimation(() => {
-      console.log(`replacing node ${n1.cy.id} with node ${n2.cy.id}`);
-      let cyN1 = this.getNode(n1);
-      if (cyN1.parent().length > 0) {
-        cyN1 = cyN1.parent();
-      }
-      let options = {
-        position: { x: cyN1.position("x"), y: cyN1.position("y") },
-      };
-      this.cy.remove(`node#${n1.cy.id}`);
-      this.highlightNode(n2, options);
-    });
+  async replaceNode(n1Id, n2Id) {
+    console.log(`replacing node ${n1Id} with node ${n2Id}`);
+    let n1 = this.cy.$(`node#${n1Id}`);
+    if (n1.parent().length > 0) {
+      n1 = n1.parent();
+    }
+    let options = {
+      position: { x: n1.position("x"), y: n1.position("y") },
+    };
+    this.cy.remove(`node#${n1Id}`);
+    await this.shiftNodeTo(n2Id, options.position.x, options.position.y);
   }
 
   run() {
@@ -244,7 +238,6 @@ class CytoscapeFacade {
   }
 
   async shiftAllNodes(x, y) {
-    // this.queueAnimation(() => {
       console.log("shifting all nodes");
       let options = {
         name: "preset",
@@ -255,88 +248,65 @@ class CytoscapeFacade {
           position.x = position.x + x;
           position.y = position.y + y;
           return position;
-        },
-        stop: () => {
-          // this.isReady = true;
-          return "stopped";
-        },
+        }
       };
       return this.cy.layout(options).run().promiseOn('layoutstop').then(() => {
         return true;
       });
-    // });
   }
 
   async shiftNode(id, x, y) {
-    // this.queueAnimation(() => {
-    //   let cyNode = this.getNode(node);
-    //   if (cyNode.parent().length > 0) {
-    //     console.log(`parent of ${node.cy.id}: ${cyNode.parent()}`);
-    //     cyNode = cyNode.parent();
-    //   }
-    //   let options = {
-    //     position: {
-    //       x: cyNode.position("x") + x,
-    //       y: cyNode.position("y") + y,
-    //     },
-    //   };
-    //   this.highlightNodeById(cyNode.data("id"), options);
-    // });
-
     let node = this.cy.$(`node#${id}`);
+    let pos = {
+      x: node.position('x') + x,
+      y: node.position('y') + y
+    };
     let ani = node.animation({
-      position: {
-        x: node.position('x') + x,
-        y: node.position('y') + y
-      },
+      position: pos,
       duration: this.duration
     });
     node.addClass("highlighted");
     return ani.play().promise('completed').then(() => {
+      // node.position('x', node.position('x') + x);
+      // node.position('y', node.position('y') + y);
       node.removeClass("highlighted");
-      return;
+      return pos;
     })
   }
 
-  shiftNodeTo(node, x, y) {
-    this.queueAnimation(() => {
-      console.log(`shifting node ${node.cy.id}`);
-      let options = {
-        position: { x: x, y: y },
-      };
-      this.highlightNode(node, options);
-    });
+  async shiftNodeTo(id, x, y) {
+    console.log(`shifting node ${id}`);
+    let options = {
+      position: { x: x, y: y },
+    };
+    let node = this.cy.$(`node#${id}`);
+    let ani = node.animation(options);
+    return ani.play().promise('complete').then(() => {
+      return true;
+    })
   }
 
-  async swapNodes(n1, n2) {
-    this.queueAnimation(() => {
-      console.log(`swapping nodes ${n1.cy.id} and ${n2.cy.id}`);
-      let cyN1 = this.getNode(n1);
-      let cyN2 = this.getNode(n2);
+  async swapNodes(n1Id, n2Id) {
+    console.log(`swapping nodes ${n1Id} and ${n2Id}`);
+    let n1 = this.cy.$(`node#${n1Id}`)
+    let n2 = this.cy.$(`node#${n2Id}`);
 
-      let n1HasParent = cyN1.parent().length > 0;
-      let n2HasParent = cyN2.parent().length > 0;
+    if (n1.parent().length > 0) {
+      n1 = n1.parent();
+    }
+    if (n2.parent().length > 0) {
+      n2 = n2.parent();
+    }
 
-      if (n1HasParent && n2HasParent && cyN1.parent() === cyN2.parent()) {
-        console.log(`${n1.cy.id} parent: ${cyN1.parent()}; ${n2.cy.id} parent: ${cyN2.parent()}`);
-      } else {
-        if (n1HasParent) {
-          cyN1 = cyN1.parent();
-        }
-        if (n2HasParent) {
-          cyN2 = cyN2.parent();
-        }
-      }
+    let n1Pos = await this.getNodePosition(n1Id);
+    let n2Pos = await this.getNodePosition(n2Id);
 
-      let n2Options = {
-        position: { x: cyN1.position("x"), y: cyN1.position("y") },
-      };
-      let n1Options = {
-        position: { x: cyN2.position("x"), y: cyN2.position("y") },
-      };
-      this.highlightNodeById(cyN1.data("id"), n1Options);
-      this.highlightNodeById(cyN2.data("id"), n2Options);
-    });
+    console.log(n1Pos);
+    console.log(n2Pos);
+
+    await this.shiftNodeTo(n1Id, n2Pos.x, n2Pos.y);
+    await this.shiftNodeTo(n2Id, n1Pos.x, n1Pos.y);
+    return { n1: await this.getNodePosition(n1Id), n2: await this.getNodePosition(n2Id) }
   }
 
   toggleAnimation() {
